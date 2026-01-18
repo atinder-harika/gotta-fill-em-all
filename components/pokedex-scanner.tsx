@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useCallback } from "react"
+import { useState } from "react"
 import { useGame } from "@/context/game-context"
 import { motion, AnimatePresence } from "framer-motion"
 import { Upload, FileText, Sparkles, Check } from "lucide-react"
@@ -15,58 +15,122 @@ export function PokedexScanner({ onCapture }: PokedexScannerProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
   const [scannedFile, setScannedFile] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const processFile = async (file: File) => {
+    console.log("Processing file:", file.name, file.type, file.size);
+    setScannedFile(file.name)
+    setIsScanning(true)
+    setShowSuccess(false)
+
+    try {
+      // Read file content
+      console.log("Reading file content...");
+      const fileContent = await readFileContent(file)
+      console.log("File content read, length:", fileContent.length);
+      
+      // Upload to RAG
+      console.log("Uploading to RAG...");
+      const response = await fetch("/api/rag", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: fileContent,
+          filename: file.name,
+        }),
+      })
+
+      console.log("Upload response status:", response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Upload failed:", errorData);
+        throw new Error("Upload failed")
+      }
+
+      const result = await response.json();
+      console.log("Upload successful:", result);
+
+      // Scanning animation for 2 seconds
+      setTimeout(() => {
+        setIsScanning(false)
+        setShowSuccess(true)
+        
+        // Determine file type
+        const fileType = file.type.includes("pdf")
+          ? "pdf"
+          : file.type.includes("text") || file.name.endsWith(".txt")
+            ? "text"
+            : "image"
+        
+        console.log("Adding to Pokedex, file type:", fileType);
+        
+        // Add document to Pokedex
+        addDocument({
+          name: file.name,
+          type: fileType,
+          extractedData: {
+            "File Size": `${(file.size / 1024).toFixed(1)} KB`,
+            "Type": fileType.toUpperCase(),
+          },
+        })
+        
+        // Add XP
+        addXp(10)
+        console.log("Added 10 XP");
+
+        // Show success for 2.5 seconds then close
+        setTimeout(() => {
+          setScannedFile(null)
+          setShowSuccess(false)
+          onCapture?.()
+        }, 2500)
+      }, 2000)
+    } catch (error) {
+      console.error("File upload failed:", error)
+      setIsScanning(false)
+      setScannedFile(null)
+      alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`)
+    }
+  }
+
+  const readFileContent = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => resolve(e.target?.result as string)
+      reader.onerror = reject
+      reader.readAsText(file)
+    })
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
-  }, [])
+  }
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
+  const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-  }, [])
+  }
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
     const files = e.dataTransfer.files
     if (files.length > 0) {
       processFile(files[0])
     }
-  }, [])
+  }
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("File select triggered!", e.target.files);
     const files = e.target.files
     if (files && files.length > 0) {
+      console.log("File selected:", files[0].name);
       processFile(files[0])
+    } else {
+      console.log("No files selected");
     }
-  }, [])
-
-  const processFile = (file: File) => {
-    setScannedFile(file.name)
-    setIsScanning(true)
-
-    setTimeout(() => {
-      setIsScanning(false)
-      const fileType = file.type.includes("pdf")
-        ? "pdf"
-        : file.type.includes("text") || file.name.endsWith(".txt")
-          ? "text"
-          : "image"
-      addDocument({
-        name: file.name,
-        type: fileType,
-        extractedData: {
-          "Sample Field": "Sample Value",
-        },
-      })
-      addXp(10)
-
-      setTimeout(() => {
-        setScannedFile(null)
-        onCapture?.()
-      }, 1500)
-    }, 2000)
   }
 
   return (
@@ -106,7 +170,7 @@ export function PokedexScanner({ onCapture }: PokedexScannerProps) {
 
       {/* Success state */}
       <AnimatePresence>
-        {scannedFile && !isScanning && (
+        {showSuccess && (
           <motion.div
             className="absolute inset-0 flex items-center justify-center bg-[#f8f9fa]/90"
             initial={{ opacity: 0 }}

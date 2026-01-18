@@ -182,6 +182,7 @@
   text-align: center;
   vertical-align: middle;
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
   color: #212529;
   background-color: #f8f9fa;
@@ -429,6 +430,7 @@
 .pixel-art {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
 }
 
@@ -447,17 +449,22 @@
     4px 0 0 #212529;
 }
 
-/* Scrollbar styling */
-.nes-scrollbar::-webkit-scrollbar {
+/* Scrollbar styling - Global */
+::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
-.nes-scrollbar::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: #212529;
   border: 2px solid #f8f9fa;
 }
 
-.nes-scrollbar::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: #f7d51d;
   border: 2px solid #212529;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ffd700;
 }

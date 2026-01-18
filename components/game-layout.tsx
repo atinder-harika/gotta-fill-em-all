@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, BookOpen, Settings, Plus, Send, Mic } from "lucide-react"
+import { Menu, X, BookOpen, Settings, Plus, Send, Mic, MessageSquare, Upload } from "lucide-react"
 import { PokedexTab } from "@/components/pokedex-tab"
 import { SettingsTab } from "@/components/settings-tab"
 import { BattleArena } from "@/components/battle-arena"
+import { PokedexScanner } from "@/components/pokedex-scanner"
 import { useGame } from "@/context/game-context"
 
 export interface ChatMessage {
@@ -15,24 +16,56 @@ export interface ChatMessage {
   isImportant?: boolean
 }
 
+export type GameMode = "landing" | "chat" | "voice" | "upload"
+
 export function GameLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuTab, setMenuTab] = useState<"pokedex" | "settings">("pokedex")
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      text: "Hey there, Trainer! I'm Ashly, your guide. Drop a document or ask me anything!",
-      sender: "ashly",
-    },
-  ])
+  const [activeMode, setActiveMode] = useState<GameMode>("landing")
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState("")
   const [isListening, setIsListening] = useState(false)
-  const [showScanner, setShowScanner] = useState(false)
   const [hasInteracted, setHasInteracted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([])
+  const [voiceBubbleText, setVoiceBubbleText] = useState("")
+  const [showScanner, setShowScanner] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
   const chatRef = useRef<HTMLDivElement>(null)
+  const recognitionRef = useRef<any>(null)
   const { xp, level, addXp, accent } = useGame()
+
+  // Sync activeMode with hasInteracted
+  useEffect(() => {
+    if (activeMode === "chat") {
+      setHasInteracted(true)
+    } else {
+      setHasInteracted(false)
+    }
+  }, [activeMode])
+
+  // Initial greeting on mount
+  useEffect(() => {
+    const greetingText = "Hello fellow trainer! Ready to fill 'em all?"
+    setVoiceBubbleText(greetingText)
+    playVoiceResponse(greetingText)
+    
+    // Clear bubble after 8 seconds
+    const timer = setTimeout(() => setVoiceBubbleText(""), 8000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Persist active mode
+  useEffect(() => {
+    const saved = localStorage.getItem("activeMode")
+    if (saved && saved !== "landing") {
+      setActiveMode(saved as GameMode)
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem("activeMode", activeMode)
+  }, [activeMode])
 
   // Listen for extension messages
   useEffect(() => {
@@ -106,9 +139,10 @@ export function GameLayout() {
         // Update conversation history with Ashly's response
         setConversationHistory((prev) => [...prev, { role: "assistant", content: ashlyResponse }])
         
-        // Play voice response
-        if (ashlyResponse) {
+        // Play voice response only in voice mode
+        if (ashlyResponse && activeMode === "voice") {
           playVoiceResponse(ashlyResponse)
+          setVoiceBubbleText(ashlyResponse)
         }
       } else {
         throw new Error(data.error?.message || "Chat API returned an error")
@@ -150,34 +184,130 @@ export function GameLayout() {
     }
   }
 
-  const toggleMic = async () => {
-    if (!hasInteracted) setHasInteracted(true)
-    
-    if (isListening) {
-      // Stop listening
-      setIsListening(false)
+  const toggleRecording = async () => {
+    if (isRecording) {
+      // Stop recording
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+      setIsRecording(false)
       return
     }
     
-    // Start listening (placeholder - would use Web Speech API in full implementation)
-    setIsListening(true)
-    
-    // For demo: simulate voice input after 2 seconds
-    setTimeout(() => {
-      setIsListening(false)
-      
-      // Replay the last Ashly message as voice
-      if (latestAshlyMessage) {
-        playVoiceResponse(latestAshlyMessage.text)
-      }
-      
-      const ashlyMsg: ChatMessage = {
+    // Check for Web Speech API support
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      const errorMsg: ChatMessage = {
         id: crypto.randomUUID(),
-        text: "I can hear you! In the full version, I'll transcribe your speech. For now, click me to hear my voice!",
+        text: "Sorry, voice recording isn't supported in your browser. Try Chrome or Edge!",
         sender: "ashly",
       }
-      setMessages((prev) => [...prev, ashlyMsg])
-    }, 2000)
+      setMessages((prev) => [...prev, errorMsg])
+      return
+    }
+    
+    // Start recording
+    const recognition = new SpeechRecognition()
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.lang = 'en-US'
+    
+    recognition.onstart = () => {
+      console.log('Voice recognition started')
+      setIsRecording(true)
+    }
+    
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript
+      console.log('Transcript:', transcript)
+      
+      // Send transcript as a message with quotes to indicate voice mode
+      setInputValue(transcript)
+      
+      // Simulate pressing send button
+      setTimeout(() => {
+        const userMsg: ChatMessage = { id: crypto.randomUUID(), text: `"${transcript}"`, sender: "user" }
+        setMessages((prev) => [...prev, userMsg])
+        
+        const newHistory = [...conversationHistory, { role: "user", content: transcript }]
+        setConversationHistory(newHistory)
+        
+        // Send to API and play voice response
+        handleChatAPI(transcript, newHistory, true)
+      }, 100)
+    }
+    
+    recognition.onerror = (event: any) => {
+      console.log('Recognition ended:', event.error)
+      setIsRecording(false)
+      
+      const errorMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        text: "Oops! I couldn't hear that clearly. Try again?",
+        sender: "ashly",
+      }
+      setMessages((prev) => [...prev, errorMsg])
+    }
+    
+    recognition.onend = () => {
+      console.log('Voice recognition ended')
+      setIsRecording(false)
+    }
+    
+    recognitionRef.current = recognition
+    recognition.start()
+  }
+  
+  const handleChatAPI = async (message: string, history: Array<{ role: string; content: string }>, playVoice: boolean = false) => {
+    setIsLoading(true)
+    
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          history: history.slice(-10),
+        }),
+      })
+      
+      if (!response.ok) throw new Error(`API error: ${response.status}`)
+      
+      const data = await response.json()
+      
+      if (data.status === "success") {
+        const ashlyResponse = data.data.response
+        const isImportant = /\*\*Found:/.test(ashlyResponse) || /\d{4,}/.test(ashlyResponse)
+        
+        const ashlyMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          text: playVoice ? `"${ashlyResponse}"` : ashlyResponse,
+          sender: "ashly",
+          isImportant,
+        }
+        
+        setMessages((prev) => [...prev, ashlyMsg])
+        setConversationHistory((prev) => [...prev, { role: "assistant", content: ashlyResponse }])
+        
+        // Play voice response if requested (from voice recording)
+        if (ashlyResponse && playVoice) {
+          playVoiceResponse(ashlyResponse)
+          setVoiceBubbleText(ashlyResponse)
+        }
+      } else {
+        throw new Error(data.error?.message || "Chat API returned an error")
+      }
+    } catch (error) {
+      console.error("Chat API error:", error)
+      const errorMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        text: "Oops! I'm having trouble connecting. Let me try again in a moment!",
+        sender: "ashly",
+      }
+      setMessages((prev) => [...prev, errorMsg])
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Get latest Ashly message for voice bubble
@@ -198,27 +328,25 @@ export function GameLayout() {
 
   return (
     <div className="relative w-full max-w-[420px] mx-auto h-screen overflow-hidden">
-      {/* Full Screen Background Container */}
+      {/* Single Scrolling Background - scenery.png */}
       <motion.div 
-        className="absolute inset-0 w-full h-full"
-        animate={{ y: hasInteracted ? "-25%" : "0%" }}
-        transition={{ duration: 0.8, ease: "easeInOut" }}
+        className="absolute inset-0 w-full h-full cursor-pointer"
+        onClick={() => hasInteracted && setActiveMode("landing")}
       >
-        {/* Sky Background - Full height */}
-        <div
-          className="absolute top-0 left-0 right-0 h-full bg-cover bg-center pixel-art"
-          style={{ backgroundImage: `url('/images/sky.png')` }}
-        />
-        
-        {/* Ground Background - Positioned at bottom, extends down */}
-        <div
-          className="absolute left-0 right-0 bg-repeat-x bg-top pixel-art"
-          style={{
-            backgroundImage: `url('/images/ground.png')`,
-            backgroundSize: "auto 100%",
-            top: "100%",
-            height: "60vh",
+        <motion.div
+          className="absolute w-full h-[200vh] pixel-art"
+          style={{ 
+            backgroundImage: `url('/images/scenery.png')`,
+            backgroundSize: "100% auto",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "top center",
+            left: 0,
+            right: 0,
           }}
+          animate={{ 
+            y: hasInteracted ? "-22.2%" : "0%"
+          }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
         />
       </motion.div>
 
@@ -237,9 +365,9 @@ export function GameLayout() {
           animate={{ y: [0, -4, 0] }}
           transition={{ duration: 2.5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
         >
-          {/* Voice Bubble - Appears on right side for important info */}
+          {/* Voice Bubble - Appears on right side for important info or voice mode */}
           <AnimatePresence>
-            {latestAshlyMessage?.isImportant && (
+            {((latestAshlyMessage?.isImportant && activeMode !== "voice") || (voiceBubbleText && activeMode === "voice")) && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8, x: 20 }}
                 animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -254,7 +382,7 @@ export function GameLayout() {
                   />
                   <div className="absolute inset-0 flex items-center justify-center p-3 pb-5">
                     <p className="text-[8px] font-mono text-gray-800 leading-tight text-center font-bold">
-                      {latestAshlyMessage.text.slice(0, 60)}...
+                      {activeMode === "voice" ? voiceBubbleText.slice(0, 60) : latestAshlyMessage?.text.slice(0, 60)}...
                     </p>
                   </div>
                 </div>
@@ -289,7 +417,7 @@ export function GameLayout() {
         </motion.div>
       </motion.div>
 
-      {/* Chat Area with Ground Background - Slides up from bottom */}
+      {/* Chat Area - No background, uses scenery.png */}
       <AnimatePresence>
         {hasInteracted && (
           <motion.div
@@ -298,20 +426,22 @@ export function GameLayout() {
             exit={{ y: "100%" }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
             className="absolute bottom-[72px] left-0 right-0 h-[40%] z-10"
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Ground texture background */}
-            <div 
-              className="absolute inset-0 bg-repeat pixel-art opacity-90"
-              style={{ 
-                backgroundImage: `url('/images/ground.png')`,
-                backgroundSize: "cover",
-              }}
-            />
+            {/* Close Button - Above everything */}
+            <button
+              onClick={() => setActiveMode("landing")}
+              className="nes-btn is-error !p-1 !m-0"
+              style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 999 }}
+              aria-label="Close chat"
+            >
+              <X className="w-4 h-4" />
+            </button>
             
             {/* Chat messages overlay */}
             <div
               ref={chatRef}
-              className="absolute inset-0 overflow-y-auto px-4 py-3 nes-scrollbar"
+              className="absolute inset-0 overflow-y-auto px-4 py-12 pb-3 nes-scrollbar"
             >
               <div className="space-y-3">
                 {messages.map((msg) => (
@@ -323,11 +453,11 @@ export function GameLayout() {
                   >
                     {msg.sender === "ashly" ? (
                       <div className="nes-balloon from-left max-w-[85%]">
-                        <p className="text-[10px] font-mono leading-relaxed">{msg.text}</p>
+                        <p className="text-[10px] font-mono leading-relaxed break-words">{msg.text}</p>
                       </div>
                     ) : (
                       <div className="nes-container is-dark is-rounded max-w-[85%] !p-2 !border-2">
-                        <p className="text-[10px] font-mono leading-relaxed">{msg.text}</p>
+                        <p className="text-[10px] font-mono leading-relaxed break-words">{msg.text}</p>
                       </div>
                     )}
                   </motion.div>
@@ -385,64 +515,142 @@ export function GameLayout() {
       {/* ====== BOTTOM FLOATING CONTROLS ====== */}
       <div className="absolute bottom-4 left-0 right-0 z-30 px-4">
         <div className="flex items-center justify-center gap-3">
-          {/* Plus Button (Floating) */}
+          {/* Plus Button - Upload Document */}
           <motion.button
             onClick={() => setShowScanner(true)}
             className="nes-btn is-warning animate-float"
             style={{ animationDelay: "0.2s" }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            aria-label="Add document"
+            aria-label="Upload document"
           >
             <Plus className="w-5 h-5" />
           </motion.button>
 
-          {/* Chat Input (Floating) */}
+          {/* Chat Input - Chat Mode */}
           <motion.div 
-            className="flex-1 max-w-[200px] animate-float-slow"
+            onClick={() => activeMode !== "chat" && setActiveMode("chat")}
+            className={`cursor-pointer animate-float-slow`}
             style={{ animationDelay: "0.4s" }}
+            layout
+            animate={{
+              width: activeMode === "chat" ? "240px" : "auto",
+            }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
           >
-            <div className="relative">
-              <textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSend()
-                  }
-                }}
-                placeholder={isLoading ? "Ashly is thinking..." : "Ask Ashly..."}
-                disabled={isLoading}
-                className="nes-input is-dark w-full !py-2 !px-3 !text-[10px] !border-2 resize-none disabled:opacity-50"
-                rows={2}
-              />
-              <button
-                onClick={handleSend}
-                disabled={isLoading || !inputValue.trim()}
-                className="absolute right-2 bottom-2 text-[#f7d51d] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Send message"
-              >
-                {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-[#f7d51d] border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </button>
-            </div>
+            <AnimatePresence mode="wait">
+              {activeMode === "chat" ? (
+                <motion.div 
+                  key="textarea"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2, delay: 0.2 }}
+                  className="relative w-full"
+                >
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSend()
+                      }
+                    }}
+                    placeholder={isLoading ? "Ashly is thinking..." : "Ask Ashly..."}
+                    disabled={isLoading}
+                    className="nes-input is-dark w-full !py-2 !pr-12 !pl-3 !text-[10px] !border-2 resize-none disabled:opacity-50"
+                    rows={2}
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={isLoading || !inputValue.trim()}
+                    className="nes-btn is-success !p-1 !m-0 disabled:opacity-50"
+                    style={{ position: 'absolute', right: '25px', top: '50%', transform: 'translateY(-50%)' }}
+                    aria-label="Send message"
+                  >
+                    {isLoading ? (
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-3 h-3" />
+                    )}
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.button
+                  key="button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="nes-btn"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  aria-label="Open chat"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                </motion.button>
+              )}
+            </AnimatePresence>
           </motion.div>
 
-          {/* Mic Button (Floating) */}
-          <motion.button
-            onClick={toggleMic}
-            className={`nes-btn animate-float ${isListening ? "is-error" : ""}`}
-            style={{ animationDelay: "0.6s" }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            aria-label={isListening ? "Stop listening" : "Start voice input"}
+          {/* Mic Button - Voice Recording with Melody Bars */}
+          <motion.div
+            onClick={toggleRecording}
+            className="cursor-pointer"
+            layout
+            animate={{
+              width: isRecording ? "240px" : "auto",
+            }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
           >
-            <Mic className={`w-5 h-5 ${isListening ? "animate-pulse" : ""}`} />
-          </motion.button>
+            <AnimatePresence mode="wait">
+              {isRecording ? (
+                <motion.div
+                  key="melody-bars"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2, delay: 0.2 }}
+                  className="nes-btn is-error w-full h-[52px] px-3"
+                  style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                >
+                  {[...Array(10)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="bg-white rounded-full"
+                      style={{ width: '6px' }}
+                      animate={{
+                        height: ["8px", "28px", "8px"],
+                      }}
+                      transition={{
+                        duration: 0.6,
+                        repeat: Infinity,
+                        delay: i * 0.1,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.button
+                  key="mic-button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="nes-btn animate-float"
+                  style={{ animationDelay: "0.6s" }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  aria-label="Start voice recording"
+                >
+                  <Mic className="w-5 h-5" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
       </div>
 
@@ -512,7 +720,7 @@ export function GameLayout() {
           </>
         )}
       </AnimatePresence>
-      
+
       {/* Document Scanner Modal */}
       <BattleArena
         latestMessage={latestAshlyMessage?.text}

@@ -231,4 +231,38 @@ Prompt:
       of Acceptance. Click the button to highlight where it goes!"
 
       This ensures the demo is snappy.
-
+
+🚀 Phase 6: Polish & Deployment (Final Hours)
+
+COMPLETED ✅:
+  ● Chat mode with expanding text bar animation
+  ● Close button for chat (X, outside click, mode switch)
+  ● Mode-specific responses: chat = text only, voice = sound + bubble
+  ● Upload button always available (not mode-dependent)
+  ● RAG API route with document upload
+  ● Document model with text search index (filename + content searchable)
+  ● Chat API integrated with RAG document search
+  ● Scanner animations (scan + success states)
+  ● XP system (+10 per upload)
+  ● Voice recording with Web Speech API
+  ● Melody bars animation (10 bars, matches chat textarea width)
+  ● Voice messages marked with double quotes in chat history
+  ● Demo fallback responses when Gemini quota exceeded
+  ● MongoDB document size limit increased to 2MB
+  ● Error handling for voice recording (no-speech)
+
+TODO - UI Polish:
+  ● Add typewriter effect for chat responses with text-blip.mp3 sound
+  ● Smooth scroll animation for chat messages
+  ● Loading skeleton for document upload
+  
+TODO - CSS Compatibility Fixes:
+  ● Add -webkit-user-select vendor prefix for Safari compatibility (line 185 globals.css)
+  ● Add -webkit-optimize-contrast for Edge image-rendering (line 432 globals.css)
+
+TODO - RAG Enhancements:
+  ● PDF text extraction (pdf-parse library)
+  ● Image OCR (Tesseract.js for images)
+  ● Pokedex tab UI to display uploaded documents
+
+Step 6.1: Testing & Bug Fixes

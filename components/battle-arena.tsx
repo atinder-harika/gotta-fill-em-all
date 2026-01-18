@@ -30,13 +30,16 @@ export function BattleArena({ showScanner, setShowScanner }: BattleArenaProps) {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="w-full h-full max-w-lg max-h-96 flex flex-col nes-container !p-0 !border-4">
               <div className="flex items-center justify-between p-3 bg-[#212529] border-b-4 border-[#212529]">
                 <h3 className="text-xs font-mono font-bold text-[#f7d51d]">DOCUMENT SCANNER</h3>
                 <button
+                  type="button"
                   onClick={() => setShowScanner(false)}
                   className="nes-btn !p-1 !m-0"
+                  aria-label="Close scanner"
                 >
                   <X className="w-4 h-4" />
                 </button>

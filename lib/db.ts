@@ -82,7 +82,7 @@ const documentSchema = new mongoose.Schema(
     content: {
       type: String,
       required: true,
-      maxlength: 500000, // Increased from 100000 to 500000 characters (~500KB)
+      maxlength: 2000000, // 2MB limit for larger PDFs and documents
       index: true,
     },
     metadata: {
@@ -105,8 +105,8 @@ const documentSchema = new mongoose.Schema(
   }
 );
 
-// Create text index for full-text search
-documentSchema.index({ content: "text", "metadata.tags": "text" });
+// Create text index for full-text search (includes filename for retrieval by name)
+documentSchema.index({ content: "text", "metadata.filename": "text", "metadata.tags": "text" });
 
 // Vector index for semantic search (if MongoDB supports it)
 documentSchema.index({ embedding: "2dsphere" });
