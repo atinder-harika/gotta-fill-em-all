@@ -1,0 +1,28 @@
+BANK STATEMENT SUMMARY
+State Bank of India - International Branch
+
+Account Holder: Rajesh Kumar Patel
+Account Number: 12345678901
+Account Type: Savings Account
+Statement Period: October 1, 2025 - December 31, 2025
+
+ACCOUNT SUMMARY:
+Opening Balance (Oct 1, 2025): $18,450.00 CAD
+Closing Balance (Dec 31, 2025): $22,800.00 CAD
+Average Balance: $20,625.00 CAD
+
+MAJOR TRANSACTIONS:
+Dec 15, 2025 - Deposit: $5,000.00 CAD (Education Savings)
+Nov 20, 2025 - Deposit: $3,500.00 CAD (Gift from Parents)
+Oct 10, 2025 - Deposit: $2,000.00 CAD (Work Savings)
+
+CERTIFICATION:
+This is to certify that Rajesh Kumar Patel maintains sufficient funds for study in Canada, meeting the minimum requirement of $15,000 CAD for living expenses plus tuition costs.
+
+Bank Manager: Amit Sharma
+Date: January 5, 2026
+Contact: +91-22-2266-7890
+
+State Bank of India
+International Student Services Department
+Mumbai Branch - IFSC Code: SBIN0012345

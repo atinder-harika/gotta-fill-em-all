@@ -62,7 +62,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { query } = validateWithSchema(ragRequestSchema, body);
+    const validatedBody = validateWithSchema(ragRequestSchema, body);
+    const { query } = validatedBody as { query: string };
 
     logger.info("RAG search initiated", { userId, query });
 

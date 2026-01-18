@@ -1,0 +1,42 @@
+IMMIGRATION, REFUGEES AND CITIZENSHIP CANADA (IRCC)
+UNIQUE CLIENT IDENTIFIER (UCI) RECORD
+
+UCI Number: 1234-5678
+
+Client Information:
+Full Name: PATEL, Rajesh Kumar
+Date of Birth: March 15, 1998
+Country of Citizenship: India
+Passport Number: P9876543
+
+APPLICATION HISTORY:
+
+1. Visitor Visa Application - 2023
+   Application Number: V123456789
+   Status: Approved
+   Valid From: June 1, 2023
+   Valid Until: May 31, 2024
+   Purpose: Tourism
+
+2. Study Permit Application - 2026 (Current)
+   Application Number: S987654321
+   Status: In Progress
+   Institution: Canadian College of Technology and Business
+   DLI Number: O19374268000
+   Program Start: September 1, 2026
+
+BIOMETRICS INFORMATION:
+Biometrics Collected: Yes
+Collection Date: December 20, 2025
+Valid Until: December 19, 2035
+Collection Location: VFS Global - Mumbai
+
+CORRESPONDENCE:
+Primary Email: rajesh.patel@email.com
+Secondary Email: rpatel.study@gmail.com
+Phone: +91-98765-43210
+
+IMPORTANT: This UCI number must be used in all future correspondence with IRCC. Keep this number secure and reference it in your study permit application forms.
+
+For application status updates, visit: canada.ca/study-permit-status
+Application tracking number will be provided after submission.

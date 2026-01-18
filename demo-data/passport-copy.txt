@@ -1,0 +1,30 @@
+PASSPORT INFORMATION EXTRACT
+
+Document Type: Passport
+Country: India
+Passport Number: P9876543
+
+PERSONAL INFORMATION:
+Surname: PATEL
+Given Names: RAJESH KUMAR
+Nationality: INDIAN
+Date of Birth: 15 MAR 1998
+Place of Birth: Mumbai, Maharashtra, India
+Sex: Male
+
+DOCUMENT DETAILS:
+Date of Issue: 10 JAN 2024
+Date of Expiry: 09 JAN 2034
+Issuing Authority: Regional Passport Office, Mumbai
+Place of Issue: Mumbai
+
+MACHINE READABLE ZONE:
+P<INDPATEL<<RAJESH<KUMAR<<<<<<<<<<<<<<<<<<
+P9876543<0IND9803153M3401095<<<<<<<<<<<<06
+
+IMPORTANT TRAVEL DOCUMENT
+This passport contains 36 pages and is valid for all countries unless otherwise endorsed.
+
+Emergency Contact:
+Name: Priya Patel (Mother)
+Phone: +91-22-5555-1234
