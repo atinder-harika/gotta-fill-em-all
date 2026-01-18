@@ -53,23 +53,6 @@ export async function POST(req: NextRequest) {
 
     logger.info("Chat request received", { userId, messageLength: message.length });
 
-    // Check for demo override first (ensures snappy demo)
-    const demoResponse = getDemoOverride(message);
-    if (demoResponse) {
-      logger.info("Demo override triggered", { userId, message });
-      return NextResponse.json(
-        API_RESPONSE_TEMPLATE.success(
-          { 
-            response: demoResponse, 
-            metrics: { tokensInput: 0, tokensOutput: 0 },
-            isDemo: true 
-          },
-          { executionTime: Date.now() - startTime }
-        ),
-        { status: 200 }
-      );
-    }
-
     // Build context-aware message
     let fullMessage = message;
     

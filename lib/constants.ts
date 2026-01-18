@@ -21,7 +21,7 @@ export const CACHE_CONFIG = {
 };
 
 export const GEMINI_CONFIG = {
-  MODEL: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  MODEL: process.env.GEMINI_MODEL || "gemini-1.5-flash",
   MAX_TOKENS: 2000,
   TEMPERATURE: 0.7,
   EMBEDDING_MODEL: "text-embedding-004",
