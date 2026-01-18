@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X, BookOpen, Settings, Plus, Send, Mic, MessageSquare, Upload } from "lucide-react"
 import { PokedexTab } from "@/components/pokedex-tab"
@@ -31,9 +31,170 @@ export function GameLayout() {
   const [voiceBubbleText, setVoiceBubbleText] = useState("")
   const [showScanner, setShowScanner] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
+  const [isScanning, setIsScanning] = useState(false)
+  const [pageContext, setPageContext] = useState<any>(null)
   const chatRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null)
   const { xp, level, addXp, accent } = useGame()
+
+  // Save scanned page to RAG database
+  const savePageToRAG = useCallback(async (pageData: any) => {
+    try {
+      console.log('[Game] Saving page context to RAG...')
+      
+      // Format page data as searchable text
+      const pageText = `
+Page Title: ${pageData.title}
+URL: ${pageData.url}
+
+Form Fields:
+${pageData.fields.map((f: any) => 
+  `- ${f.label || f.placeholder || f.name || 'Unnamed'} (${f.type}${f.required ? ', required' : ''})`
+).join('\n')}
+
+Full Field Details:
+${pageData.fields.map((f: any) => 
+  `Field: ${f.label || f.placeholder || f.name}
+  Type: ${f.type}
+  Name: ${f.name}
+  ID: ${f.id}
+  Required: ${f.required}
+  Placeholder: ${f.placeholder}
+`).join('\n')}
+`.trim()
+
+      const response = await fetch('/api/rag', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: pageText,
+          filename: `${pageData.title} - Scanned Form`,
+          tags: ['scanned-page', 'form']
+        })
+      })
+      
+      if (response.ok) {
+        console.log('[Game] Page saved to RAG successfully')
+      } else {
+        console.error('[Game] Failed to save page to RAG:', await response.text())
+      }
+    } catch (error) {
+      console.error('[Game] Error saving page to RAG:', error)
+    }
+  }, [])
+
+  // Listen for extension messages (FIELD_FILLED events and voice recording results)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      console.log('[Game] Received message:', event.data)
+      
+      // Accept messages from extension iframe parent
+      if (event.data?.type === "FIELD_FILLED") {
+        console.log('[Game] Field filled event:', event.data)
+        addXp(10)
+        const audio = new Audio("/sounds/coin.mp3")
+        audio.play().catch(() => {})
+      }
+      
+      // Voice recording events from panel.js
+      if (event.data?.type === "RECORDING_STARTED") {
+        setIsRecording(true)
+      }
+      
+      if (event.data?.type === "RECORDING_RESULT") {
+        const transcript = event.data.transcript
+        console.log('[Game] Got transcript:', transcript)
+        
+        // Show transcript in voice bubble immediately
+        setVoiceBubbleText(transcript)
+        
+        // Add user message to chat history with quotes
+        const userMsg: ChatMessage = { 
+          id: crypto.randomUUID(), 
+          text: `"${transcript}"`, 
+          sender: "user" 
+        }
+        setMessages((prev) => [...prev, userMsg])
+        
+        // Update history and send to API
+        const newHistory = [...conversationHistory, { role: "user", content: transcript }]
+        setConversationHistory(newHistory)
+        handleChatAPI(transcript, newHistory, true)
+        
+        setIsRecording(false)
+      }
+      
+      if (event.data?.type === "RECORDING_ERROR") {
+        console.log('[Game] Recording error:', event.data.error)
+        setIsRecording(false)
+        
+        let errorText = "Oops! I couldn't hear that clearly. Try again?"
+        
+        if (event.data.error === 'not-allowed') {
+          errorText = "🎤 Microphone access blocked! Please click 'Allow' when Chrome asks for permission."
+        } else if (event.data.error === 'no-speech') {
+          errorText = "I didn't hear anything. Try speaking louder?"
+        }
+        
+        const errorMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          text: errorText,
+          sender: "ashly",
+        }
+        setMessages((prev) => [...prev, errorMsg])
+      }
+      
+      if (event.data?.type === "RECORDING_ENDED") {
+        setIsRecording(false)
+      }
+      
+      // Store page context when scan completes
+      if (event.data?.type === "PAGE_DATA") {
+        console.log('[Game] Received page data:', event.data.data)
+        setPageContext(event.data.data)
+        
+        // Save to RAG database
+        savePageToRAG(event.data.data).then(() => {
+          // Update confirmation message with actual field count after save
+          const fieldCount = event.data.data?.fields?.length || 0
+          const confirmMsg = `I scanned the page and found ${fieldCount} form fields. Saved to my memory.`
+          
+          if (activeMode === "chat") {
+            const newMessage: ChatMessage = {
+              id: `ashly-${Date.now()}`,
+              text: confirmMsg,
+              sender: "ashly"
+            }
+            setMessages(prev => [...prev, newMessage])
+          } else {
+            playVoiceResponse(confirmMsg)
+          }
+        })
+      }
+    }
+    
+    window.addEventListener("message", handleMessage)
+    return () => window.removeEventListener("message", handleMessage)
+  }, [addXp, conversationHistory, activeMode, savePageToRAG])
+
+
+  // Helper function to send message to extension
+  const sendToExtension = (type: string, data: any) => {
+    // Post message to parent (extension panel)
+    window.parent.postMessage({ type, ...data }, '*')
+  }
+
+  // Scan current page for forms
+  const scanCurrentPage = () => {
+    console.log('[Game] Requesting page scan...')
+    setIsScanning(true)
+    sendToExtension('SCAN_PAGE', {})
+    
+    // Reset scanning animation after 2s (confirmation comes from PAGE_DATA event)
+    setTimeout(() => {
+      setIsScanning(false)
+    }, 2000)
+  }
 
   // Sync activeMode with hasInteracted
   useEffect(() => {
@@ -72,7 +233,7 @@ export function GameLayout() {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === "FIELD_FILLED") {
         addXp(10)
-        const audio = new Audio("/coin.mp3")
+        const audio = new Audio("/sounds/coin.mp3")
         audio.play().catch(() => {})
       }
     }
@@ -123,9 +284,9 @@ export function GameLayout() {
       if (data.status === "success") {
         const ashlyResponse = data.data.response
         
-        // Check if response contains important info (numbers, codes)
-        const isImportant = /\*\*Found:/.test(ashlyResponse) || 
-                           /\d{4,}/.test(ashlyResponse)
+        // Check if response contains field data (FIELD: and VALUE: pattern)
+        const fieldMatch = ashlyResponse.match(/FIELD:\s*(.+?)\nVALUE:\s*(.+?)(\n|$)/s)
+        const isImportant = fieldMatch !== null
         
         const ashlyMsg: ChatMessage = {
           id: crypto.randomUUID(),
@@ -139,11 +300,7 @@ export function GameLayout() {
         // Update conversation history with Ashly's response
         setConversationHistory((prev) => [...prev, { role: "assistant", content: ashlyResponse }])
         
-        // Play voice response only in voice mode
-        if (ashlyResponse && activeMode === "voice") {
-          playVoiceResponse(ashlyResponse)
-          setVoiceBubbleText(ashlyResponse)
-        }
+        // No voice playback for text input - chat mode only
       } else {
         throw new Error(data.error?.message || "Chat API returned an error")
       }
@@ -186,76 +343,14 @@ export function GameLayout() {
 
   const toggleRecording = async () => {
     if (isRecording) {
-      // Stop recording
-      if (recognitionRef.current) {
-        recognitionRef.current.stop()
-      }
-      setIsRecording(false)
+      // Stop recording via extension bridge
+      sendToExtension('STOP_RECORDING', {})
       return
     }
     
-    // Check for Web Speech API support
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      const errorMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        text: "Sorry, voice recording isn't supported in your browser. Try Chrome or Edge!",
-        sender: "ashly",
-      }
-      setMessages((prev) => [...prev, errorMsg])
-      return
-    }
-    
-    // Start recording
-    const recognition = new SpeechRecognition()
-    recognition.continuous = false
-    recognition.interimResults = false
-    recognition.lang = 'en-US'
-    
-    recognition.onstart = () => {
-      console.log('Voice recognition started')
-      setIsRecording(true)
-    }
-    
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript
-      console.log('Transcript:', transcript)
-      
-      // Send transcript as a message with quotes to indicate voice mode
-      setInputValue(transcript)
-      
-      // Simulate pressing send button
-      setTimeout(() => {
-        const userMsg: ChatMessage = { id: crypto.randomUUID(), text: `"${transcript}"`, sender: "user" }
-        setMessages((prev) => [...prev, userMsg])
-        
-        const newHistory = [...conversationHistory, { role: "user", content: transcript }]
-        setConversationHistory(newHistory)
-        
-        // Send to API and play voice response
-        handleChatAPI(transcript, newHistory, true)
-      }, 100)
-    }
-    
-    recognition.onerror = (event: any) => {
-      console.log('Recognition ended:', event.error)
-      setIsRecording(false)
-      
-      const errorMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        text: "Oops! I couldn't hear that clearly. Try again?",
-        sender: "ashly",
-      }
-      setMessages((prev) => [...prev, errorMsg])
-    }
-    
-    recognition.onend = () => {
-      console.log('Voice recognition ended')
-      setIsRecording(false)
-    }
-    
-    recognitionRef.current = recognition
-    recognition.start()
+    // Start recording via extension bridge
+    console.log('[Game] Requesting recording start from extension...')
+    sendToExtension('START_RECORDING', {})
   }
   
   const handleChatAPI = async (message: string, history: Array<{ role: string; content: string }>, playVoice: boolean = false) => {
@@ -268,6 +363,7 @@ export function GameLayout() {
         body: JSON.stringify({
           message,
           history: history.slice(-10),
+          pageContext,
         }),
       })
       
@@ -275,10 +371,16 @@ export function GameLayout() {
       
       const data = await response.json()
       
+    console.log('[Game] Sending to API with pageContext:', pageContext)
+    
       if (data.status === "success") {
         const ashlyResponse = data.data.response
-        const isImportant = /\*\*Found:/.test(ashlyResponse) || /\d{4,}/.test(ashlyResponse)
         
+        // Check if response contains field data (FIELD: and VALUE: pattern)
+        const fieldMatch = ashlyResponse.match(/FIELD:\s*(.+?)\nVALUE:\s*(.+?)(\n|$)/s)
+        const isImportant = fieldMatch !== null
+        
+        // Voice mode: add quotes and show in bubble
         const ashlyMsg: ChatMessage = {
           id: crypto.randomUUID(),
           text: playVoice ? `"${ashlyResponse}"` : ashlyResponse,
@@ -289,8 +391,8 @@ export function GameLayout() {
         setMessages((prev) => [...prev, ashlyMsg])
         setConversationHistory((prev) => [...prev, { role: "assistant", content: ashlyResponse }])
         
-        // Play voice response if requested (from voice recording)
-        if (ashlyResponse && playVoice) {
+        // Play voice and show in bubble (only for voice mode)
+        if (playVoice) {
           playVoiceResponse(ashlyResponse)
           setVoiceBubbleText(ashlyResponse)
         }
@@ -365,9 +467,9 @@ export function GameLayout() {
           animate={{ y: [0, -4, 0] }}
           transition={{ duration: 2.5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
         >
-          {/* Voice Bubble - Appears on right side for important info or voice mode */}
+          {/* Voice Bubble - Appears on right side for voice mode only */}
           <AnimatePresence>
-            {((latestAshlyMessage?.isImportant && activeMode !== "voice") || (voiceBubbleText && activeMode === "voice")) && (
+            {voiceBubbleText && activeMode === "voice" && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8, x: 20 }}
                 animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -382,7 +484,7 @@ export function GameLayout() {
                   />
                   <div className="absolute inset-0 flex items-center justify-center p-3 pb-5">
                     <p className="text-[8px] font-mono text-gray-800 leading-tight text-center font-bold">
-                      {activeMode === "voice" ? voiceBubbleText.slice(0, 60) : latestAshlyMessage?.text.slice(0, 60)}...
+                      {voiceBubbleText.slice(0, 60)}...
                     </p>
                   </div>
                 </div>
@@ -419,7 +521,7 @@ export function GameLayout() {
 
       {/* Chat Area - No background, uses scenery.png */}
       <AnimatePresence>
-        {hasInteracted && (
+        {hasInteracted && activeMode === "chat" && (
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: "0%" }}
@@ -444,24 +546,55 @@ export function GameLayout() {
               className="absolute inset-0 overflow-y-auto px-4 py-12 pb-3 nes-scrollbar"
             >
               <div className="space-y-3">
-                {messages.map((msg) => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    {msg.sender === "ashly" ? (
-                      <div className="nes-balloon from-left max-w-[85%]">
-                        <p className="text-[10px] font-mono leading-relaxed break-words">{msg.text}</p>
+                {messages.map((msg) => {
+                  // Parse field data from Ashly's message
+                  const fieldMatch = msg.sender === "ashly" ? msg.text.match(/FIELD:\s*(.+?)\nVALUE:\s*(.+?)(\n|$)/s) : null
+                  const fieldName = fieldMatch ? fieldMatch[1].trim() : null
+                  const fieldValue = fieldMatch ? fieldMatch[2].trim() : null
+
+                  return (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div className="flex flex-col gap-2 max-w-[85%]">
+                        {msg.sender === "ashly" ? (
+                          <div className="nes-balloon from-left">
+                            <p className="text-[10px] font-mono leading-relaxed break-words whitespace-pre-wrap">{msg.text}</p>
+                          </div>
+                        ) : (
+                          <div className="nes-container is-dark is-rounded !p-2 !border-2">
+                            <p className="text-[10px] font-mono leading-relaxed break-words">{msg.text}</p>
+                          </div>
+                        )}
+                        
+                        {/* Copy & Fill Button */}
+                        {fieldName && fieldValue && (
+                          <button
+                            onClick={() => {
+                              // Copy to clipboard
+                              navigator.clipboard.writeText(fieldValue)
+                              
+                              // Highlight field in extension
+                              sendToExtension('HIGHLIGHT_FIELD', {
+                                fieldName: fieldName,
+                                fieldValue: fieldValue
+                              })
+                              
+                              // Add XP
+                              addXp(10)
+                            }}
+                            className="nes-btn is-success !text-[8px] !py-1 !px-2 self-start"
+                          >
+                            📋 Copy & Fill
+                          </button>
+                        )}
                       </div>
-                    ) : (
-                      <div className="nes-container is-dark is-rounded max-w-[85%] !p-2 !border-2">
-                        <p className="text-[10px] font-mono leading-relaxed break-words">{msg.text}</p>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  )
+                })}
               </div>
             </div>
           </motion.div>
@@ -515,6 +648,25 @@ export function GameLayout() {
       {/* ====== BOTTOM FLOATING CONTROLS ====== */}
       <div className="absolute bottom-4 left-0 right-0 z-30 px-4">
         <div className="flex items-center justify-center gap-3">
+          {/* Scan Page Button - Analyze current webpage */}
+          <motion.button
+            onClick={scanCurrentPage}
+            className={`nes-btn ${isScanning ? 'is-success' : 'is-primary'} animate-float`}
+            style={{ animationDelay: "0s" }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            aria-label="Scan current page"
+            disabled={isScanning}
+          >
+            {isScanning ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            )}
+          </motion.button>
+          
           {/* Plus Button - Upload Document */}
           <motion.button
             onClick={() => setShowScanner(true)}

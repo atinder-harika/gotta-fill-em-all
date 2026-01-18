@@ -15,25 +15,13 @@ const _pressStart2P = Press_Start_2P({
 })
 
 export const metadata: Metadata = {
-  title: "FormFiller Pokedex - Gotta Fill 'Em All!",
+  title: "Gotta Fill 'Em All!",
   description: "Gamified accessibility extension for filling government forms",
   generator: "v0.app",
   icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
+    icon: "/icon128.png",
+    shortcut: "/icon128.png",
+    apple: "/icon128.png",
   },
 }
 

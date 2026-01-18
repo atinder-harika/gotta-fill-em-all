@@ -94,7 +94,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       if (newStage !== prev.evolutionStage) {
         setIsEvolving(true)
-        const audio = new Audio("/coin.mp3")
+        const audio = new Audio("/sounds/coin.mp3")
         audio.play().catch(() => {})
         setTimeout(() => setIsEvolving(false), 1500)
       }

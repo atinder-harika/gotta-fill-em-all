@@ -8,32 +8,36 @@ import { isAppError } from "@/lib/errors";
 import { connectDB, Document } from "@/lib/db";
 
 // Ashly's personality system instruction
-const ASHLY_SYSTEM_PROMPT = `You are Ashly, an energetic and friendly bureaucracy trainer helping users fill out government forms. Your personality:
-- You're enthusiastic and encouraging, making boring paperwork feel like an adventure
-- You use simple, clear English and avoid complex jargon
-- You format important information clearly with line breaks
-- When you find important numbers or codes (like DLI numbers, UCI numbers), you explicitly format them like this:
+const ASHLY_SYSTEM_PROMPT = `You are Ashly, a helpful assistant for government forms.
 
+RULES:
+- Keep answers to 2-3 lines MAX
+- No emojis ever
+- No markdown formatting (no **, no #, no lists)
+- Be direct and to the point
+- Use simple language
 
-**Found: [NUMBER]**
+WHEN YOU FIND DATA THE USER NEEDS:
+If you find information that matches a form field, format your response EXACTLY like this:
+FIELD: [field name or label]
+VALUE: [the actual value]
+[brief explanation if needed]
 
+Example: 
+FIELD: DLI Number
+VALUE: O19374268000
+This is from your school's Letter of Acceptance.
 
-- If the user seems stressed or confused, you ask Pik-A-Boo (your companion) to say something encouraging
-- You celebrate small wins and progress
-- You're patient and never judgmental
-
-Your goal is to make government forms accessible and less intimidating for everyone, especially newcomers and people with ADHD or dyslexia.`;
+Your goal is to help people with short attention spans fill forms quickly without overwhelm.`;
 
 // Demo override for hackathon demo
 function getDemoOverride(message: string): string | null {
   const lowerMessage = message.toLowerCase();
   
   if (lowerMessage.includes("dli") || lowerMessage.includes("school code") || lowerMessage.includes("learning institution")) {
-    return `I found it! Your DLI number is **O1937423**. 
-
-This is your Designated Learning Institution number - it's like a special ID code for your school. You can find it on your Letter of Acceptance.
-
-Click the button to highlight where it goes on the form! ✨`;
+    return `FIELD: DLI Number
+VALUE: O19374268000
+This is your school's DLI number from your Letter of Acceptance.`;
   }
   
   return null;
@@ -82,7 +86,7 @@ export async function POST(req: NextRequest) {
     // Build context-aware message
     let fullMessage = message;
     
-    // Search RAG documents for relevant context
+    // Search RAG documents for relevant context (includes scanned pages)
     try {
       await connectDB();
       const relevantDocs = await Document.find(
@@ -136,11 +140,11 @@ export async function POST(req: NextRequest) {
       logger.warn("Gemini failed, using demo fallback", { error: geminiError.message });
       
       const demoResponses = [
-        "Great question! I'm here to help you with that form. Let me check my notes... 📝",
-        "I've got this! Let me find that information for you. Just give me a second! ✨",
-        "Perfect timing! I was just reviewing that section. Let me pull up the details... 🔍",
-        "You're doing great! Let me help you with that field. One moment please! 💪",
-        "No worries, I can help with that! Let me look through your documents... 📄",
+        "Checking my notes for that info. One sec.",
+        "Looking through your documents now.",
+        "Let me find that for you. Just a moment.",
+        "Got it. Searching your uploaded files.",
+        "On it. Reviewing your documents.",
       ];
       
       const randomResponse = demoResponses[Math.floor(Math.random() * demoResponses.length)];

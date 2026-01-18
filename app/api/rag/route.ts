@@ -7,6 +7,47 @@ import { validateWithSchema, ragRequestSchema } from "@/lib/validator";
 import { API_RESPONSE_TEMPLATE } from "@/lib/constants";
 import { isAppError } from "@/lib/errors";
 
+// GET endpoint to list all documents
+export async function GET(req: NextRequest) {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json(
+        API_RESPONSE_TEMPLATE.error("AUTH_ERROR", "Unauthorized"),
+        { status: 401 }
+      );
+    }
+
+    await connectDB();
+
+    // Fetch all non-archived documents for this user
+    const documents = await Document.find({ archived: false })
+      .sort({ createdAt: -1 })
+      .exec();
+
+    return NextResponse.json(
+      API_RESPONSE_TEMPLATE.success({
+        documents: documents.map(doc => ({
+          id: doc._id.toString(),
+          name: doc.metadata?.filename || 'Untitled',
+          type: doc.metadata?.tags?.includes('scanned-page') ? 'scanned-page' : 'document',
+          date: doc.createdAt.toISOString(),
+          tags: doc.metadata?.tags || [],
+          contentPreview: doc.content.slice(0, 200)
+        }))
+      }),
+      { status: 200 }
+    );
+  } catch (error) {
+    logger.error("Failed to fetch documents", error);
+    return NextResponse.json(
+      API_RESPONSE_TEMPLATE.error("INTERNAL_ERROR", "Failed to fetch documents"),
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
 

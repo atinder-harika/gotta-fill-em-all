@@ -244,13 +244,22 @@ COMPLETED ✅:
   ● Chat API integrated with RAG document search
   ● Scanner animations (scan + success states)
   ● XP system (+10 per upload)
-  ● Voice recording with Web Speech API
+  ● Voice recording with Web Speech API (via extension bridge)
   ● Melody bars animation (10 bars, matches chat textarea width)
   ● Voice messages marked with double quotes in chat history
   ● Demo fallback responses when Gemini quota exceeded
   ● MongoDB document size limit increased to 2MB
   ● Error handling for voice recording (no-speech)
+  ● Chrome Extension with side panel integration
+  ● Content script for field highlighting (golden glow effect)
+  ● Extension icons (16x16, 48x48, 128x128)
 
+TODO - Extension Polish:
+  ● Auto-prompt for microphone permission on first mic button click
+  ● Add "Copy & Fill" button when Ashly finds data from RAG
+  ● Field highlighting demo with test HTML form
+  ● Autofill as stretch goal (programmatic form filling)
+  
 TODO - UI Polish:
   ● Add typewriter effect for chat responses with text-blip.mp3 sound
   ● Smooth scroll animation for chat messages

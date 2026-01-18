@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Express Entry - Study Permit Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .form-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #26374a;
+            border-bottom: 3px solid #26374a;
+            padding-bottom: 10px;
+        }
+        .form-section {
+            margin: 30px 0;
+        }
+        .form-section h2 {
+            color: #26374a;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .required::after {
+            content: " *";
+            color: #d3080c;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #26374a;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .button-group {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: #26374a;
+            color: white;
+        }
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        .canada-flag {
+            width: 40px;
+            height: 20px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <svg class="canada-flag" viewBox="0 0 64 32">
+            <rect width="64" height="32" fill="#FF0000"/>
+            <rect x="20" width="24" height="32" fill="#FFFFFF"/>
+            <path d="M32,8 L34,14 L40,14 L35,18 L37,24 L32,20 L27,24 L29,18 L24,14 L30,14 Z" fill="#FF0000"/>
+        </svg>
+        
+        <h1>Study Permit Application Form</h1>
+        <p style="color: #666; margin-bottom: 30px;">Immigration, Refugees and Citizenship Canada</p>
+
+        <form id="study-permit-form">
+            <!-- Personal Information -->
+            <div class="form-section">
+                <h2>Personal Information</h2>
+                
+                <div class="form-group">
+                    <label for="full-name" class="required">Full Name (as shown on passport)</label>
+                    <input type="text" id="full-name" name="full-name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email" class="required">Email Address</label>
+                    <input type="email" id="email" name="email" required>
+                    <div class="help-text">We will use this email to contact you about your application</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="date-of-birth" class="required">Date of Birth</label>
+                    <input type="date" id="date-of-birth" name="date-of-birth" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="passport-number" class="required">Passport Number</label>
+                    <input type="text" id="passport-number" name="passport-number" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="country-of-citizenship" class="required">Country of Citizenship</label>
+                    <input type="text" id="country-of-citizenship" name="country-of-citizenship" required>
+                </div>
+            </div>
+
+            <!-- Study Information -->
+            <div class="form-section">
+                <h2>Study Information</h2>
+
+                <div class="form-group">
+                    <label for="dli-number" class="required">Designated Learning Institution (DLI) Number</label>
+                    <input type="text" id="dli-number" name="dli-number" required placeholder="e.g., O19374268000">
+                    <div class="help-text">This number is on your Letter of Acceptance from your Canadian school</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="school-name" class="required">Name of School/University</label>
+                    <input type="text" id="school-name" name="school-name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="program-name" class="required">Program of Study</label>
+                    <input type="text" id="program-name" name="program-name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="program-start-date" class="required">Program Start Date</label>
+                    <input type="date" id="program-start-date" name="program-start-date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="program-duration">Program Duration (in months)</label>
+                    <input type="number" id="program-duration" name="program-duration" min="1">
+                </div>
+            </div>
+
+            <!-- Previous Immigration -->
+            <div class="form-section">
+                <h2>Previous Immigration Information (if applicable)</h2>
+
+                <div class="form-group">
+                    <label for="uci-number">UCI Number (Unique Client Identifier)</label>
+                    <input type="text" id="uci-number" name="uci-number" placeholder="e.g., 1234-5678">
+                    <div class="help-text">Found on previous Canadian immigration documents</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="previous-visa">Have you previously applied for a Canadian visa?</label>
+                    <select id="previous-visa" name="previous-visa">
+                        <option value="">Select an option</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn-primary">Submit Application</button>
+                <button type="reset" class="btn-secondary">Clear Form</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('study-permit-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('This is a demo form. In a real application, your data would be submitted securely.');
+        });
+    </script>
+</body>
+</html>
