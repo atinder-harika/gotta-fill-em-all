@@ -30,19 +30,6 @@ This is from your school's Letter of Acceptance.
 
 Your goal is to help people with short attention spans fill forms quickly without overwhelm.`;
 
-// Demo override for hackathon demo
-function getDemoOverride(message: string): string | null {
-  const lowerMessage = message.toLowerCase();
-  
-  if (lowerMessage.includes("dli") || lowerMessage.includes("school code") || lowerMessage.includes("learning institution")) {
-    return `FIELD: DLI Number
-VALUE: O19374268000
-This is your school's DLI number from your Letter of Acceptance.`;
-  }
-  
-  return null;
-}
-
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
 
