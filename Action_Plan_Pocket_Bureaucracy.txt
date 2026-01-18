@@ -1,0 +1,234 @@
+🚀 GitHub Copilot Action Plan: Pocket
+Bureaucracy
+Slogan: "Gotta Fill 'Em All!"
+
+Project: Gamified Accessibility Extension (The "Trojan Horse" Architecture)
+
+
+🚀 Phase 1: Frontend "Side Panel" UI (Hours 0-4)
+Context: We are building the UI that lives inside the Chrome Side Panel. It needs to look like a
+"Pokedex" or Game Interface with multiple tabs.
+
+Step 1.1: The Game Layout & Navigation
+Goal: Create the main responsive container with a Bottom Navigation Bar.
+
+file: components/GameLayout.tsx
+
+Prompt:
+
+      Create a React component named GameLayout using Tailwind CSS.
+      Structure:
+       1. Main Content Area (calc(100vh - 60px)): Renders the active tab content.
+       2. Bottom Navigation Bar (60px): Fixed at the bottom. Dark grey/metallic
+          texture.
+          Items:
+           ○ Home: (Icon: Zap from lucide-react) -> Shows the "Duo" & Battle Arena.
+           ○ Pokedex: (Icon: BookOpen) -> Shows stored documents.
+           ○ Settings: (Icon: Settings) -> Profile & Config.
+              State: Use useState to track activeTab ('home' | 'pokedex' | 'settings').
+
+Step 1.2: The "Home" Tab (Battle Arena)
+Goal: The main interaction screen with Ashly & Pik-A-Boo.
+
+file: components/tabs/HomeTab.tsx
+
+Prompt:
+
+      Create HomeTab.tsx.
+     Move the "DuoDisplay" and "Control Deck" logic here.
+
+     Top Half: DuoDisplay (Ashly & Pik-A-Boo).
+
+     Bottom Half: PokedexScanner (Dropzone).
+
+     Ensure it fits within the parent container without scrolling.
+
+Step 1.3: The "Pokedex" Tab (RAG History)
+Goal: View uploaded documents and previous forms.
+
+file: components/tabs/PokedexTab.tsx
+
+Prompt:
+
+     Create PokedexTab.tsx.
+     Visuals: High-tech "Inventory" grid.
+     Content:
+      ●   Header: "My Documents".
+      ●   List: A scrollable list of "Captured Documents".
+          ○ Each item shows: Icon (PDF/Image), Filename (e.g., "T4_Slip.pdf"), and
+              Date.
+          ○ Action: Clicking an item opens a "Preview" modal (or shows extracted
+              key-value pairs like "Income: $50,000").
+      ●   Empty State: "No Documents Captured Yet. Go to Home to Scan!"
+
+Step 1.4: The "Settings" Tab
+Goal: Profile, Language, Theme, and Logout.
+
+file: components/tabs/SettingsTab.tsx
+
+Prompt:
+
+     Create SettingsTab.tsx.
+     Sections:
+      1. Trainer Profile: Avatar upload, Name input.
+      2. Voice Settings:
+         ○ Ashly's Accent: Dropdown ['Canadian', 'Indian', 'Filipino'].
+         ○ Speed: Slider (0.5x to 2x).
+      3. Theme: Toggle (Dark Mode / High Contrast Mode).
+          4. Account: "Logout" button (Red, full width).
+             Persistence: Save these settings to localStorage (or Context) immediately
+             on change.
+
+
+🚀 Phase 2: The Brain & Voice (Next.js API) (Hours 4-8)
+Context: Connecting Gemini and ElevenLabs.
+
+Step 2.1: The Personality Chat Route
+Goal: Make Gemini roleplay as Ashly.
+
+file: app/api/chat/route.ts
+
+Prompt:
+
+      Create a Next.js App Router API route at /api/chat.
+
+      It should accept a POST request with { message, context }.
+
+      Use the Google Gemini SDK (@google/generative-ai).
+
+      System Instruction: "You are Ashly, an energetic bureaucracy trainer helping a
+      user fill out government forms. Use simple English. Be encouraging!
+
+      If the user provides a number (like a DLI number), explicitly format it like this:
+
+
+
+
+      .
+
+      If the user is stressed, ask Pik-A-Boo to say something nice."
+
+      Return the text response.
+
+Step 2.2: The Voice Route (ElevenLabs)
+Goal: Generate speech with accents.
+
+file: app/api/speak/route.ts
+
+Prompt:
+
+      Create an API route /api/speak that accepts { text, accent }.
+      Use the ElevenLabs API to generate a stream.
+      Logic:
+       ●   If accent === 'canadian', use Voice ID: [Insert Default ID].
+       ●   If accent === 'indian', use Voice ID: [Insert Indian Accent ID].
+       ●   If accent === 'filipino', use Voice ID: [Insert Filipino Accent ID].
+           Return the audio stream.
+
+
+🚀 Phase 3: The Extension "Eyes" (Hours 8-12)
+Context: The Chrome Extension files that interact with the government page.
+
+Step 3.1: Manifest Configuration
+Goal: Set up the side panel permissions.
+
+file: extension/manifest.json
+
+Prompt:
+
+      Create a manifest.json for a Chrome Extension (Manifest V3).
+
+      Permissions: sidePanel, activeTab, scripting.
+
+      Host Permissions: <all_urls> (for the demo).
+
+      Side Panel: Set default path to panel.html.
+
+      Content Scripts: Run content.js on *://*.canada.ca/* (or all urls for testing).
+
+Step 3.2: The Panel HTML Loader
+Goal: Load the Next.js app.
+
+file: extension/panel.html
+
+Prompt:
+
+      Create panel.html.
+
+      It should be a simple HTML file with an iframe.
+
+      Set the iframe src to http://localhost:3000 (or your production URL).
+
+      Make the iframe responsive (100vw, 100vh) with no border.
+      Add allow="microphone; clipboard-read; clipboard-write" to the iframe tag.
+
+Step 3.3: Content Script - The Highlighter
+Goal: Highlight the input fields when Ashly finds data.
+
+file: extension/content.js
+
+Prompt:
+
+      Create content.js.
+       1. Listen for message HIGHLIGHT_FIELD with data { fieldId }.
+       2. When received, find the input element by ID or Name.
+       3. Apply a style: border: 4px solid gold; box-shadow: 0 0 15px gold; z-index:
+          9999;.
+       4. Scroll the element into view (scrollIntoView({ behavior: 'smooth' })).
+       5. Listen for input events on that field. If the user types/pastes something, send
+          message FIELD_FILLED back to runtime.
+
+
+🚀 Phase 4: Gamification Logic (Hours 12-16)
+Context: Tying the "Field Filled" event to the "Evolution" animation.
+
+Step 4.1: Game State Context
+Goal: manage XP and Level globally.
+
+file: context/GameContext.tsx
+
+Prompt:
+
+      Create a React Context named GameContext.
+      State: xp (number), level (number), evolutionStage ('egg' | 'mouse' | 'beaver').
+      Action: addXp(amount).
+      Logic:
+       ●   When xp crosses 50, set evolutionStage to 'mouse'.
+       ●   When xp crosses 100, set evolutionStage to 'beaver'.
+       ●   Play a sound effect (placeholder function) on level up.
+
+Step 4.2: Connecting Extension Events to State
+Goal: When content.js says "Field Filled", give XP.
+file: app/page.tsx (or your main dashboard component)
+
+Prompt:
+
+      In the main dashboard, add a useEffect to listen for messages from the extension
+      iframe.
+
+      window.addEventListener('message', (event) => { ... })
+
+      If event.data.type === 'FIELD_FILLED', call addXp(10).
+
+      Trigger a "Coin Sound" effect using useSound (or HTML5 Audio).
+
+
+🚀 Phase 5: Demo Hardcoding (Safety Net)
+Context: Ensure the demo works 100% of the time.
+
+Step 5.1: The "Golden Path" Override
+Goal: If Gemini fails or lags, return the perfect answer.
+
+file: app/api/chat/route.ts
+
+Prompt:
+
+      Add a "Demo Override" at the top of the chat route.
+
+      If message.includes("DLI") or message.includes("school code"):
+
+      Immediately return: "I found it! Your DLI number is O1937423. It is in your Letter
+      of Acceptance. Click the button to highlight where it goes!"
+
+      This ensures the demo is snappy.
+

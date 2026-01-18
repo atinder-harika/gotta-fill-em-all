@@ -1,0 +1,171 @@
+Product Requirements Document:
+Pocket Bureaucracy (Project
+"MapleQuest")
+"Gotta File 'Em All: The Gamified Accessibility Companion"
+
+Target Theme: Hack for Accessibility (Focus 1 & 3)
+
+Demo Target: IRCC Study Permit Extension Form
+
+
+1. Executive Summary
+The Pitch: Government websites are the "Final Boss" for people with ADHD (Cognitive) and
+Dyslexia (Neuro). They are dense, confusing, and unforgiving.
+
+The Solution: A Gamified Browser Extension that overlays a familiar "Trainer & Creature" Duo
+onto the IRCC portal. They read the text, simplify the jargon, and turn filling out a Study Permit
+into an RPG quest to "Evolve Your Companion."
+
+The Goal: Win "Best Accessibility," "Best Use of Gemini," and the Grand Prize by turning a
+painful citizen experience into a joyful, nostalgic adventure.
+
+Theme Alignment:
+    ●​ Focus 1 (Social & Systemic Access): Breaking down barriers to essential services for
+       Newcomers via multi-language/accent support.
+    ●​ Focus 3 (Cognitive & Neuro Accessibility): Reducing executive dysfunction through
+       gamification (XP/Evolution) and simplified instructions.
+
+2. Winning the Judges (Scoring Strategy)
+This project is engineered to max out the Hackville Rubric:
+
+|
+
+| Criteria | Pts | Strategy |
+
+| Adherence to Theme | 10 | We directly address Cognitive Load. The "Trainer" acts as an
+executive function prosthesis. |
+
+| Originality | 10 | We are merging Nostalgic Gaming (Pokemon-style) with Civic Tech. It’s
+"Pokemon meets TurboTax." |
+| Impact | 10 | We address a massive industry problem: Newcomers failing immigration
+forms due to complexity. |
+
+| UX Execution | 5 | The "Side Panel" UI keeps the user focused. The "Evolution" mechanic
+provides a tangible dopamine reward. |
+
+| Technical Execution | 5 | The "Trojan Horse" architecture (Next.js inside Extension) ensures
+a stable demo. We use RAG + Voice + Vector Search. |
+
+
+3. The "Parody Pokemon" Theme (Familiarity + Safety)
+Concept: Leverage the "Ash & Pikachu" dynamic for instant emotional connection, but use
+"Parody" versions to avoid IP strikes.
+ ●​ The Trainer: "Ashly (The Advocate)"
+    ○​ Role: The Logic/Brain. Explains the rules, translates legalese, and guides the user.
+    ○​ Voice (ElevenLabs): Energetic, youthful. Crucial: Can switch accents (e.g., Indian
+       English, Filipino English) to make newcomers feel at home.
+    ○​ Visual: Blue vest, red hat (classic trainer vibe).
+ ●​ The Creature: "Pik-A-Boo (The Spark)"
+    ○​ Role: The Hype/Evolution.
+    ○​ Evolution Mechanic: Starts as a small "Spark Egg." As you fill fields, it cracks. At
+       50% form completion, it becomes "Pik-A-Boo" (Small Mouse). At 100%, it evolves
+       into "Volt-Beaver" (Big Hero).
+    ○​ Voice: Cute squeaks that get deeper/stronger as it evolves.
+
+4. The "Trojan Horse" Architecture
+The Strategy: Chrome Side Panel Extension loading a Next.js 15 app.
+
+The Stack (Golden Stack Adapted)
+ 1.​ The Brain (Next.js 15): Runs on DigitalOcean. Handles Gemini logic, RAG retrieval.
+ 2.​ The Window (Chrome Side Panel): manifest.json wrapper.
+ 3.​ The Eyes (Content Script): Injected into canada.ca. Reads text, finds inputs, sends to
+     Side Panel.
+ 4.​ The Memory (MongoDB Atlas): Vector Search for user documents (Passport, Letter of
+     Acceptance).
+ 5.​ The Voice (ElevenLabs):
+     ○​ Input: Speech-to-Text (User asks "What is a UCI number?").
+     ○​ Output: Text-to-Speech (Ashly explains it).
+
+5. Core Features & "The Duo" Logic
+Feature A: "Bureaucracy Vision" (Cognitive Access)
+●​ Action: User clicks a confusing term (e.g., "Designated Learning Institution Number").
+●​ Ashly (Gemini): "That's just the school's ID number! Check your Letter of Acceptance in
+   the Pokedex."
+●​ Voice: Ashly speaks this out loud (ElevenLabs).
+
+Feature B: "Secure RAG & Simulated Autofill" (Priority Feature)
+●​ Concept: Instead of brittle programmatic autofill, we use a "Guide & Assist" model.
+●​ The Interaction:
+   1.​ Form asks for "DLI Number."
+   2.​ Ashly searches the uploaded PDF (RAG).
+   3.​ Ashly says: "I found it! It's O1937423."
+   4.​ UI Action: Ashly presents a "Copy" button.
+   5.​ Visual Cue: When user hovers the "Copy" button, the actual input field on the
+       government website glows Gold (via Content Script).
+   6.​ User clicks Copy -> Pastes into the glowing box.
+
+Feature C: "Evolution Gamification" (The Hook)
+●​ Mechanic:
+   ○​ Fill Name field -> +10 XP -> Egg shakes.
+   ○​ Fill Address -> +10 XP -> Egg cracks.
+   ○​ Complete Section 1 -> EVOLUTION ANIMATION (CSS/Lottie).
+●​ Why: Turns boring data entry into a "Level Up" game.
+
+Feature D: "The Universal Translator" (Newcomer Focus)
+●​ Action: User selects "Accent: Indian English" in settings.
+●​ Tech: ElevenLabs API updates the voice model ID for Ashly.
+●​ Impact: Reduces anxiety for non-native speakers by hearing a familiar voice.
+
+6. Technical Implementation Guide (24-Hour Sprint)
+Phase 1: The "Trojan Horse" (Hours 0-2)
+●​ Build Next.js app.
+●​ Create manifest.json to load http://localhost:3000 in Side Panel.
+
+Phase 2: RAG & Gemini (Hours 2-8)
+●​ Ingest: API route to upload PDF -> langchain split -> MongoDB Vector Store.
+●​ Retrieve: When user asks "What is my UCI?", query MongoDB -> Gemini Answer.
+
+Phase 3: The "Eyes" & Highlight Logic (Hours 8-12)
+●​ content.js listens for message HIGHLIGHT_FIELD: "UCI_Number".
+●​ Script finds <input name="uci"> (or similar ID) and applies style="border: 4px solid
+   #FFD700; box-shadow: 0 0 10px gold;".
+ ●​ This visual link between the "Chat" and the "Form" is the key demo moment.
+
+Phase 4: Gamification & Polish (Hours 12-20)
+ ●​ Add Lottie animations for the "Evolution."
+ ●​ Implement ElevenLabs streaming for instant voice feedback.
+
+7. Future Roadmap (The "24h Reality Check")
+ ●​ Agentic Browser Control: "In the future, Ashly will click the 'Next' button and navigate
+    pages for you. For now, she guides you."
+ ●​ Full API Auto-Fill: "We will integrate directly with CRA API (MyAccount) to pre-fill
+    everything without copy-paste."
+ ●​ Real Life Rewards: "Exchange XP for discounts on Passport fees."
+
+8. Sponsor Prize Checklist
+| Sponsor | Feature Implementation | Pitch Line |
+
+| Google Gemini | Personality Engine: Gemini prompted to act as "Ashly" (Helpful,
+Energetic). | "Gemini isn't just a chatbot; it's a role-playing engine that reduces anxiety." |
+
+| ElevenLabs | Dynamic Accents: Changing Ashly's voice to match user's origin. | "We use
+ElevenLabs to make government services sound like home." |
+
+| MongoDB | Pokedex Memory: Vector Search for user documents. | "Atlas Vector Search
+acts as our secure Pokedex for sensitive docs." |
+
+| Solana | Badge: Minting a "Study Permit Survivor" Badge. | "Permanent proof of conquering
+bureaucracy." |
+
+| Simple Ventures | IRCC Demo: Specifically targeting the Study Permit workflow. | "We solve
+the #1 pain point for Canada's fastest-growing demographic: International Students." |
+
+
+9. Demo Script (The "Winning Moment")
+ 1.​   Scene: Open canada.ca/apply-study-permit. It looks boring/scary.
+ 2.​   Summon: Click Extension. Ashly appears (Blue Vest). Spark Egg appears.
+ 3.​   Voice: Ashly (Indian Accent): "Hello friend! Let's get your study permit extended!"
+ 4.​   RAG Action: Form asks for "DLI Number." User is stuck.
+ 5.​   The Assist: User drags "Acceptance Letter.pdf" into Side Panel.
+ 6.​   The Reveal: Ashly: "I found it! Your DLI is O1937423." (Shows
+
+
+
+                                                                                                  ​
+    button).
+7.​ The Highlight: User hovers the Copy button. The Input Box on the website glows
+    Gold.
+8.​ The Interaction: User clicks Copy -> Pastes.
+9.​ The Evolution: Egg Cracks. "Level Up! +50 XP!"
+10.​Climax: User finishes form. Spark Egg evolves into Volt-Beaver. "Mission Complete!"
+

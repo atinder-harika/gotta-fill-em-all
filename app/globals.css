@@ -1,0 +1,463 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Retro NES RPG theme */
+:root {
+  --background: oklch(0.15 0.01 250);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.18 0.01 250);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.18 0.01 250);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.85 0.18 95);
+  --primary-foreground: oklch(0.15 0.01 250);
+  --secondary: oklch(0.25 0.01 250);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.22 0.01 250);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.85 0.18 95);
+  --accent-foreground: oklch(0.15 0.01 250);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.35 0.02 250);
+  --input: oklch(0.25 0.01 250);
+  --ring: oklch(0.85 0.18 95);
+  --chart-1: oklch(0.85 0.18 95);
+  --chart-2: oklch(0.6 0.15 180);
+  --chart-3: oklch(0.5 0.1 220);
+  --chart-4: oklch(0.75 0.15 50);
+  --chart-5: oklch(0.65 0.2 340);
+  --radius: 0px;
+  --sidebar: oklch(0.18 0.01 250);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.85 0.18 95);
+  --sidebar-primary-foreground: oklch(0.15 0.01 250);
+  --sidebar-accent: oklch(0.25 0.01 250);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.35 0.02 250);
+  --sidebar-ring: oklch(0.85 0.18 95);
+
+  /* NES-style game tokens */
+  --neon-green: oklch(0.75 0.2 145);
+  --neon-green-glow: oklch(0.75 0.2 145 / 0.5);
+  --neon-yellow: oklch(0.9 0.2 95);
+  --neon-glow: oklch(0.85 0.18 95 / 0.5);
+  --metallic: oklch(0.2 0.01 250);
+  --metallic-light: oklch(0.3 0.01 250);
+  --metallic-dark: oklch(0.12 0.01 250);
+  --screen-glow: oklch(0.2 0.05 180 / 0.3);
+  --nes-black: #212529;
+  --nes-white: #f8f9fa;
+}
+
+.dark {
+  --background: oklch(0.12 0.01 250);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.15 0.01 250);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.15 0.01 250);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.85 0.18 95);
+  --primary-foreground: oklch(0.12 0.01 250);
+  --secondary: oklch(0.22 0.01 250);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.2 0.01 250);
+  --muted-foreground: oklch(0.6 0 0);
+  --accent: oklch(0.85 0.18 95);
+  --accent-foreground: oklch(0.12 0.01 250);
+  --destructive: oklch(0.5 0.2 25);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.3 0.02 250);
+  --input: oklch(0.22 0.01 250);
+  --ring: oklch(0.85 0.18 95);
+  --chart-1: oklch(0.85 0.18 95);
+  --chart-2: oklch(0.6 0.15 180);
+  --chart-3: oklch(0.5 0.1 220);
+  --chart-4: oklch(0.75 0.15 50);
+  --chart-5: oklch(0.65 0.2 340);
+  --sidebar: oklch(0.15 0.01 250);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.85 0.18 95);
+  --sidebar-primary-foreground: oklch(0.12 0.01 250);
+  --sidebar-accent: oklch(0.22 0.01 250);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.3 0.02 250);
+  --sidebar-ring: oklch(0.85 0.18 95);
+}
+
+@theme inline {
+  --font-sans: "Geist", "Geist Fallback";
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --font-pixel: var(--font-pixel), "Press Start 2P", monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-neon-green: var(--neon-green);
+  --color-neon-green-glow: var(--neon-green-glow);
+  --color-neon-yellow: var(--neon-yellow);
+  --color-neon-glow: var(--neon-glow);
+  --color-metallic: var(--metallic);
+  --color-metallic-light: var(--metallic-light);
+  --color-metallic-dark: var(--metallic-dark);
+  --color-screen-glow: var(--screen-glow);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* NES.css Style Components */
+.nes-container {
+  position: relative;
+  padding: 1rem 1.5rem;
+  border: 4px solid #212529;
+  background-color: #f8f9fa;
+  color: #212529;
+}
+
+.nes-container.is-dark {
+  background-color: #212529;
+  color: #f8f9fa;
+  border-color: #f8f9fa;
+}
+
+.nes-container.is-rounded {
+  border-image: none;
+  border-radius: 8px;
+}
+
+.nes-container::before,
+.nes-container::after {
+  position: absolute;
+  box-sizing: border-box;
+  content: "";
+}
+
+/* NES Button Styles */
+.nes-btn {
+  position: relative;
+  display: inline-block;
+  padding: 6px 8px;
+  margin: 4px;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  color: #212529;
+  background-color: #f8f9fa;
+  border: none;
+  font-family: var(--font-pixel), "Press Start 2P", monospace;
+  font-size: 10px;
+  box-shadow: 
+    inset -4px -4px #adafbc,
+    inset 4px 4px #fff,
+    0 4px #212529,
+    4px 0 #212529,
+    4px 4px #212529,
+    0 -4px #212529,
+    -4px 0 #212529,
+    -4px -4px #212529;
+}
+
+.nes-btn:hover {
+  color: #212529;
+  background-color: #e0e0e0;
+}
+
+.nes-btn:active {
+  box-shadow: 
+    inset -4px -4px #fff,
+    inset 4px 4px #adafbc,
+    0 4px #212529,
+    4px 0 #212529,
+    4px 4px #212529,
+    0 -4px #212529,
+    -4px 0 #212529,
+    -4px -4px #212529;
+}
+
+.nes-btn.is-primary {
+  color: #fff;
+  background-color: #209cee;
+  box-shadow: 
+    inset -4px -4px #006bb3,
+    inset 4px 4px #6eb8f0,
+    0 4px #212529,
+    4px 0 #212529,
+    4px 4px #212529,
+    0 -4px #212529,
+    -4px 0 #212529,
+    -4px -4px #212529;
+}
+
+.nes-btn.is-warning {
+  color: #212529;
+  background-color: #f7d51d;
+  box-shadow: 
+    inset -4px -4px #caac00,
+    inset 4px 4px #ffe566,
+    0 4px #212529,
+    4px 0 #212529,
+    4px 4px #212529,
+    0 -4px #212529,
+    -4px 0 #212529,
+    -4px -4px #212529;
+}
+
+.nes-btn.is-error {
+  color: #fff;
+  background-color: #e76e55;
+  box-shadow: 
+    inset -4px -4px #8c2022,
+    inset 4px 4px #f7a699,
+    0 4px #212529,
+    4px 0 #212529,
+    4px 4px #212529,
+    0 -4px #212529,
+    -4px 0 #212529,
+    -4px -4px #212529;
+}
+
+.nes-btn.is-success {
+  color: #fff;
+  background-color: #92cc41;
+  box-shadow: 
+    inset -4px -4px #4aa52e,
+    inset 4px 4px #b8e986,
+    0 4px #212529,
+    4px 0 #212529,
+    4px 4px #212529,
+    0 -4px #212529,
+    -4px 0 #212529,
+    -4px -4px #212529;
+}
+
+/* NES Input */
+.nes-input {
+  padding: 8px 12px;
+  border: 4px solid #212529;
+  background-color: #f8f9fa;
+  color: #212529;
+  font-family: var(--font-pixel), "Press Start 2P", monospace;
+  font-size: 10px;
+  outline: none;
+}
+
+.nes-input.is-dark {
+  background-color: #212529;
+  color: #f8f9fa;
+  border-color: #f8f9fa;
+}
+
+.nes-input:focus {
+  border-color: #209cee;
+}
+
+/* NES Balloon (Speech Bubble) */
+.nes-balloon {
+  position: relative;
+  display: inline-block;
+  padding: 1rem;
+  margin-left: 12px;
+  background-color: #f8f9fa;
+  color: #212529;
+  border: 4px solid #212529;
+}
+
+.nes-balloon.from-left::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: #212529;
+}
+
+.nes-balloon.from-left::after {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 4px solid transparent;
+  border-right-color: #f8f9fa;
+}
+
+/* Custom animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px var(--neon-glow), 0 0 10px var(--neon-glow);
+  }
+  50% {
+    box-shadow: 0 0 15px var(--neon-glow), 0 0 25px var(--neon-glow);
+  }
+}
+
+@keyframes pulse-green {
+  0%, 100% {
+    box-shadow: 0 0 5px var(--neon-green-glow), 0 0 10px var(--neon-green-glow);
+  }
+  50% {
+    box-shadow: 0 0 15px var(--neon-green-glow), 0 0 25px var(--neon-green-glow);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes bounce-small {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes evolution-flash {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes parallax-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-40vh);
+  }
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.animate-scan {
+  animation: scan-line 2s linear infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-pulse-green {
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 4s ease-in-out infinite;
+}
+
+.animate-bounce-small {
+  animation: bounce-small 2s ease-in-out infinite;
+}
+
+.animate-evolution {
+  animation: evolution-flash 0.5s ease-in-out;
+}
+
+/* Pixel art rendering */
+.pixel-art {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Voice bubble background */
+.voice-bubble {
+  background-image: url("/images/voice-bubble.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* NES-style floating shadow */
+.nes-shadow {
+  box-shadow: 
+    4px 4px 0 #212529,
+    0 4px 0 #212529,
+    4px 0 0 #212529;
+}
+
+/* Scrollbar styling */
+.nes-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.nes-scrollbar::-webkit-scrollbar-track {
+  background: #212529;
+  border: 2px solid #f8f9fa;
+}
+
+.nes-scrollbar::-webkit-scrollbar-thumb {
+  background: #f7d51d;
+  border: 2px solid #212529;
+}
