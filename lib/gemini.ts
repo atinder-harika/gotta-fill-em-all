@@ -32,7 +32,8 @@ export class GeminiService {
 
   async generateText(
     prompt: string,
-    history?: Array<{ role: string; content: string }>
+    history?: Array<{ role: string; content: string }>,
+    systemInstruction?: string
   ): Promise<{ text: string; metrics: GenerationMetrics }> {
     const genAI = getGeminiClient();
     if (!genAI) {
@@ -45,7 +46,14 @@ export class GeminiService {
     const startTime = Date.now();
 
     try {
-      const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL });
+      const modelConfig: any = { model: GEMINI_CONFIG.MODEL };
+      
+      // Add system instruction if provided
+      if (systemInstruction) {
+        modelConfig.systemInstruction = systemInstruction;
+      }
+      
+      const model = genAI.getGenerativeModel(modelConfig);
 
       // Build conversation history
       const messages = history

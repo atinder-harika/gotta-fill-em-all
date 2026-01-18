@@ -29,8 +29,10 @@ export function GameLayout() {
   const [isListening, setIsListening] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
   const [hasInteracted, setHasInteracted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([])
   const chatRef = useRef<HTMLDivElement>(null)
-  const { xp, level, addXp } = useGame()
+  const { xp, level, addXp, accent } = useGame()
 
   // Listen for extension messages
   useEffect(() => {
@@ -52,47 +54,130 @@ export function GameLayout() {
     }
   }, [messages])
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return
+  const handleSend = async () => {
+    if (!inputValue.trim() || isLoading) return
     
     if (!hasInteracted) setHasInteracted(true)
     
     const userMsg: ChatMessage = { id: crypto.randomUUID(), text: inputValue, sender: "user" }
     setMessages((prev) => [...prev, userMsg])
-    setInputValue("")
-
-    // Simulate Ashly response with important info detection
-    setTimeout(() => {
-      const isImportantQuery = inputValue.toLowerCase().includes("uci") || 
-                               inputValue.toLowerCase().includes("dli") ||
-                               inputValue.toLowerCase().includes("number")
-      const ashlyMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        text: isImportantQuery 
-          ? "Your UCI Number is: 1234-5678-9012. I've highlighted it for you!"
-          : "Got it! Let me help you with that. You can also drop a document using the + button!",
-        sender: "ashly",
-        isImportant: isImportantQuery,
-      }
-      setMessages((prev) => [...prev, ashlyMsg])
-    }, 1000)
-  }
-
-  const toggleMic = () => {
-    if (!hasInteracted) setHasInteracted(true)
     
-    setIsListening((prev) => !prev)
-    if (!isListening) {
-      setTimeout(() => {
-        setIsListening(false)
+    // Update conversation history
+    const newHistory = [...conversationHistory, { role: "user", content: inputValue }]
+    setConversationHistory(newHistory)
+    
+    const currentInput = inputValue
+    setInputValue("")
+    setIsLoading(true)
+
+    try {
+      // Call the chat API
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: currentInput,
+          history: newHistory.slice(-10), // Keep last 10 messages for context
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.status === "success") {
+        const ashlyResponse = data.data.response
+        
+        // Check if response contains important info (numbers, codes)
+        const isImportant = /\*\*Found:/.test(ashlyResponse) || 
+                           /\d{4,}/.test(ashlyResponse)
+        
         const ashlyMsg: ChatMessage = {
           id: crypto.randomUUID(),
-          text: "I heard you! Voice commands are ready for the demo.",
+          text: ashlyResponse,
           sender: "ashly",
+          isImportant,
         }
+        
         setMessages((prev) => [...prev, ashlyMsg])
-      }, 2000)
+        
+        // Update conversation history with Ashly's response
+        setConversationHistory((prev) => [...prev, { role: "assistant", content: ashlyResponse }])
+        
+        // Play voice response
+        if (ashlyResponse) {
+          playVoiceResponse(ashlyResponse)
+        }
+      } else {
+        throw new Error(data.error?.message || "Chat API returned an error")
+      }
+    } catch (error) {
+      console.error("Chat API error:", error)
+      const errorMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        text: "Oops! I'm having trouble connecting. Let me try again in a moment!",
+        sender: "ashly",
+      }
+      setMessages((prev) => [...prev, errorMsg])
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  const playVoiceResponse = async (text: string) => {
+    try {
+      const response = await fetch("/api/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: text.slice(0, 500), // Limit to first 500 chars for speed
+          accent,
+        }),
+      })
+
+      if (response.ok) {
+        const audioBlob = await response.blob()
+        const audioUrl = URL.createObjectURL(audioBlob)
+        const audio = new Audio(audioUrl)
+        audio.play().catch(() => {
+          console.log("Audio playback failed (user interaction may be required)")
+        })
+      }
+    } catch (error) {
+      console.error("Voice API error:", error)
+    }
+  }
+
+  const toggleMic = async () => {
+    if (!hasInteracted) setHasInteracted(true)
+    
+    if (isListening) {
+      // Stop listening
+      setIsListening(false)
+      return
+    }
+    
+    // Start listening (placeholder - would use Web Speech API in full implementation)
+    setIsListening(true)
+    
+    // For demo: simulate voice input after 2 seconds
+    setTimeout(() => {
+      setIsListening(false)
+      
+      // Replay the last Ashly message as voice
+      if (latestAshlyMessage) {
+        playVoiceResponse(latestAshlyMessage.text)
+      }
+      
+      const ashlyMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        text: "I can hear you! In the full version, I'll transcribe your speech. For now, click me to hear my voice!",
+        sender: "ashly",
+      }
+      setMessages((prev) => [...prev, ashlyMsg])
+    }, 2000)
   }
 
   // Get latest Ashly message for voice bubble
@@ -327,16 +412,22 @@ export function GameLayout() {
                     handleSend()
                   }
                 }}
-                placeholder="Ask Ashly..."
-                className="nes-input is-dark w-full !py-2 !px-3 !text-[10px] !border-2 resize-none"
+                placeholder={isLoading ? "Ashly is thinking..." : "Ask Ashly..."}
+                disabled={isLoading}
+                className="nes-input is-dark w-full !py-2 !px-3 !text-[10px] !border-2 resize-none disabled:opacity-50"
                 rows={2}
               />
               <button
                 onClick={handleSend}
-                className="absolute right-2 bottom-2 text-[#f7d51d] hover:text-white transition-colors"
+                disabled={isLoading || !inputValue.trim()}
+                className="absolute right-2 bottom-2 text-[#f7d51d] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Send message"
               >
-                <Send className="w-4 h-4" />
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-[#f7d51d] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
               </button>
             </div>
           </motion.div>
@@ -380,6 +471,7 @@ export function GameLayout() {
                   <button
                     onClick={() => setMenuOpen(false)}
                     className="nes-btn !p-1 !m-0"
+                    aria-label="Close menu"
                   >
                     <X className="w-4 h-4" />
                   </button>

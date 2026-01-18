@@ -74,16 +74,22 @@ export class VoiceService {
     }
   }
 
-  async synthesizeSpeechStream(text: string): Promise<ReadableStream<Uint8Array>> {
+  async synthesizeSpeechStream(text: string, voiceId?: string): Promise<ReadableStream<Uint8Array>> {
     if (!this.apiKey) {
       throw new ExternalServiceError("ElevenLabs", "API key not configured");
     }
 
+    // Use provided voiceId or fall back to default
+    const selectedVoiceId = voiceId || this.voiceId;
+
     try {
-      logger.info("Starting voice synthesis stream", { textLength: text.length });
+      logger.info("Starting voice synthesis stream", { 
+        textLength: text.length,
+        voiceId: selectedVoiceId 
+      });
 
       const response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${this.voiceId}/stream`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}/stream`,
         {
           method: "POST",
           headers: {

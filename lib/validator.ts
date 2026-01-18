@@ -76,6 +76,7 @@ export const ragRequestSchema = z.object({
 
 export const speakRequestSchema = z.object({
   text: z.string().min(1).max(5000),
+  accent: z.enum(["canadian", "indian", "filipino"]).optional().default("canadian"),
 });
 
 export const uploadFileSchema = z.object({

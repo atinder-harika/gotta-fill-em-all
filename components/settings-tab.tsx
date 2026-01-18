@@ -93,10 +93,11 @@ export function SettingsTab() {
             {/* Speed */}
             <div className="space-y-1">
               <div className="flex justify-between">
-                <label className="text-[8px] font-mono text-gray-500">SPEED</label>
+                <label htmlFor="speed-slider" className="text-[8px] font-mono text-gray-500">SPEED</label>
                 <span className="text-[8px] font-mono text-[#f7d51d] font-bold">{speakingSpeed}x</span>
               </div>
               <input
+                id="speed-slider"
                 type="range"
                 min="0.5"
                 max="2"
@@ -104,6 +105,7 @@ export function SettingsTab() {
                 value={speakingSpeed}
                 onChange={(e) => setSpeakingSpeed(parseFloat(e.target.value))}
                 className="w-full h-4 accent-[#f7d51d]"
+                aria-label="Speaking speed slider"
               />
               <div className="flex justify-between text-[8px] text-gray-500">
                 <span>0.5x</span>
