@@ -33,8 +33,11 @@ export function GameLayout() {
   const [isRecording, setIsRecording] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
   const [pageContext, setPageContext] = useState<any>(null)
+  const [typewriterText, setTypewriterText] = useState("")
+  const [isTypewriting, setIsTypewriting] = useState(false)
   const chatRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null)
+  const typewriterTimeoutRef = useRef<NodeJS.Timeout>()
   const { xp, level, addXp, accent } = useGame()
 
   // Save scanned page to RAG database
@@ -213,7 +216,12 @@ ${pageData.fields.map((f: any) =>
     
     // Clear bubble after 8 seconds
     const timer = setTimeout(() => setVoiceBubbleText(""), 8000)
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      if (typewriterTimeoutRef.current) {
+        clearTimeout(typewriterTimeoutRef.current)
+      }
+    }
   }, [])
 
   // Persist active mode
@@ -241,12 +249,23 @@ ${pageData.fields.map((f: any) =>
     return () => window.removeEventListener("message", handleMessage)
   }, [addXp])
 
-  // Auto-scroll chat
+  // Auto-scroll chat (includes delay for typewriter)
   useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight
+    if (!chatRef.current) return
+    
+    const scrollToBottom = () => {
+      if (chatRef.current) {
+        chatRef.current.scrollTop = chatRef.current.scrollHeight
+      }
     }
-  }, [messages])
+    scrollToBottom()
+    
+    // If typewriting, keep scrolling during animation
+    if (isTypewriting) {
+      const scrollInterval = setInterval(scrollToBottom, 50)
+      return () => clearInterval(scrollInterval)
+    }
+  }, [messages, isTypewriting])
 
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return
@@ -288,9 +307,11 @@ ${pageData.fields.map((f: any) =>
         const fieldMatch = ashlyResponse.match(/FIELD:\s*(.+?)\nVALUE:\s*(.+?)(\n|$)/s)
         const isImportant = fieldMatch !== null
         
+        // Create message with empty text initially for typewriter
+        const ashlyMsgId = crypto.randomUUID()
         const ashlyMsg: ChatMessage = {
-          id: crypto.randomUUID(),
-          text: ashlyResponse,
+          id: ashlyMsgId,
+          text: "",
           sender: "ashly",
           isImportant,
         }
@@ -299,6 +320,26 @@ ${pageData.fields.map((f: any) =>
         
         // Update conversation history with Ashly's response
         setConversationHistory((prev) => [...prev, { role: "assistant", content: ashlyResponse }])
+        
+        // Typewriter effect
+        setIsTypewriting(true)
+        let charIndex = 0
+        const typeNextChar = () => {
+          if (charIndex < ashlyResponse.length) {
+            setMessages((prev) => 
+              prev.map(msg => 
+                msg.id === ashlyMsgId 
+                  ? { ...msg, text: ashlyResponse.slice(0, charIndex + 1) }
+                  : msg
+              )
+            )
+            charIndex++
+            typewriterTimeoutRef.current = setTimeout(typeNextChar, 20)
+          } else {
+            setIsTypewriting(false)
+          }
+        }
+        typeNextChar()
         
         // No voice playback for text input - chat mode only
       } else {
@@ -380,10 +421,13 @@ ${pageData.fields.map((f: any) =>
         const fieldMatch = ashlyResponse.match(/FIELD:\s*(.+?)\nVALUE:\s*(.+?)(\n|$)/s)
         const isImportant = fieldMatch !== null
         
-        // Voice mode: add quotes and show in bubble
+        // Voice mode: add quotes, no typewriter for voice
+        const displayText = playVoice ? `"${ashlyResponse}"` : ashlyResponse
+        
+        const ashlyMsgId = crypto.randomUUID()
         const ashlyMsg: ChatMessage = {
-          id: crypto.randomUUID(),
-          text: playVoice ? `"${ashlyResponse}"` : ashlyResponse,
+          id: ashlyMsgId,
+          text: playVoice ? displayText : "",
           sender: "ashly",
           isImportant,
         }
@@ -395,6 +439,26 @@ ${pageData.fields.map((f: any) =>
         if (playVoice) {
           playVoiceResponse(ashlyResponse)
           setVoiceBubbleText(ashlyResponse)
+        } else {
+          // Typewriter effect for text mode
+          setIsTypewriting(true)
+          let charIndex = 0
+          const typeNextChar = () => {
+            if (charIndex < ashlyResponse.length) {
+              setMessages((prev) => 
+                prev.map(msg => 
+                  msg.id === ashlyMsgId 
+                    ? { ...msg, text: ashlyResponse.slice(0, charIndex + 1) }
+                    : msg
+                )
+              )
+              charIndex++
+              typewriterTimeoutRef.current = setTimeout(typeNextChar, 20)
+            } else {
+              setIsTypewriting(false)
+            }
+          }
+          typeNextChar()
         }
       } else {
         throw new Error(data.error?.message || "Chat API returned an error")
