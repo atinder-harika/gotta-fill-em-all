@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gotta Fill 'Em All
 
-## Getting Started
+A game-style Chrome extension that helps people get through confusing government forms, with an AI companion that reads your documents and guides you field by field.
 
-First, run the development server:
+🏆 **Best Use of DigitalOcean at Hackville**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+[![Watch the demo](https://img.youtube.com/vi/HGkERr3WiFE/hqdefault.jpg)](https://www.youtube.com/watch?v=HGkERr3WiFE)
+
+[Watch the demo on YouTube](https://www.youtube.com/watch?v=HGkERr3WiFE)
+
+## Why
+
+Government forms are dense and unforgiving, especially for people with ADHD or dyslexia. We turned a study permit form into an RPG quest, so the work feels manageable instead of overwhelming.
+
+## How it works
+
+```mermaid
+flowchart LR
+    F[Government form] <--> X[Chrome extension]
+    X <--> P[Side panel: Next.js app]
+    P --> C[Chat and RAG API]
+    C --> G[Gemini]
+    C --> M[(MongoDB)]
+    P --> V[ElevenLabs voice]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- A Chrome side panel runs the Next.js app next to the form you're filling in.
+- You chat or speak with the companion, and it answers from your stored documents.
+- The extension highlights the matching form fields in gold.
+- XP and a companion character make progress feel like a game.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **App:** Next.js, React, TypeScript, Tailwind CSS, Framer Motion
+- **AI:** Google Gemini, ElevenLabs
+- **Data and sign-in:** MongoDB with Mongoose, Clerk
+- **Extension:** Chrome Manifest V3 with a side panel
+- **Deployment:** Docker on a DigitalOcean Droplet
 
-## Learn More
+## Run it locally
 
-To learn more about Next.js, take a look at the following resources:
+You need Node.js, a MongoDB database, and keys for Gemini, Clerk and ElevenLabs.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Add these to `.env.local`: `MONGODB_URI`, `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, and your Clerk keys.
+2. Start the app:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   npm install
+   npm run dev
+   ```
 
-## Deploy on Vercel
+3. Go to `chrome://extensions`, turn on Developer mode, choose **Load unpacked**, and select the `extension/` folder.
+4. Open `http://localhost:3000/demo-form.html` and open the side panel.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Sample documents are in `demo-data/`. For hosting, see the [deployment guide](DEPLOYMENT_GUIDE.md).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Team
+
+Built by Atinder Harika and Chahatbir Singh at Hackville, January 2026.
+
+## Limitations and what I'd do next
+
+- This is a hackathon prototype, and it isn't hosted right now.
+- The side panel loads the app from `localhost:3000`, so it needs a hosted URL to work for other people.
+- The RAG step creates and stores embeddings, but retrieval uses MongoDB text search. The next step is real vector search.
+- It was built around one demo: a study permit form with sample documents.
+- It handles personal documents, so it would need a proper security review before real use.
+- This isn't legal or immigration advice.
