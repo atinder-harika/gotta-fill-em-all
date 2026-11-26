@@ -1,6 +1,7 @@
 // Google Gemini AI Service
 // Handles text generation, JSON generation, and embeddings
 
+import { createHash } from "crypto";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from "./logger";
 import { ExternalServiceError } from "./errors";
@@ -157,8 +158,8 @@ export class GeminiService {
       throw new ExternalServiceError("Gemini", "API key not configured");
     }
 
-    // Check cache first
-    const cacheKey = `embedding:${text.slice(0, 100)}`;
+    // Key on a hash of the whole text: two texts with the same first 100 chars must not share an embedding
+    const cacheKey = `embedding:${createHash("sha256").update(text).digest("hex")}`;
     const cached = cache.get<number[]>(cacheKey);
     if (cached) {
       logger.info("Embedding retrieved from cache");
